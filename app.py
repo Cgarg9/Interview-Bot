@@ -104,7 +104,7 @@ def generate_random_question(relevant_chunks):
 
 def main():
     st.set_page_config(page_title="Chat PDF")
-    st.header("Chat with PDF using Gemini💁") 
+    st.header("Prepare for your interviews with AI💁") 
     
     user_subject = st.text_input("What topic would you like to test today")
     
