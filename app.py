@@ -13,6 +13,7 @@ from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
 import random
 import copy
+import re 
 
 load_dotenv()
 os.getenv("GOOGLE_API_KEY")
@@ -81,7 +82,8 @@ def user_input(user_question):
         , return_only_outputs=True)
 
     print(response)
-    st.write("Reply: ", response["output_text"])
+    st.write("Theoretical answer: ", response["output_text"])
+    return response
 
 def generate_random_question(relevant_chunks):
     if not relevant_chunks:
@@ -101,10 +103,43 @@ def generate_random_question(relevant_chunks):
 
     return response
 
+# def compare(user_answer, answer):
+#     if not user_answer or not answer:
+#         return "Information not available"
+#     model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.3)
+#     prompt_template = PromptTemplate(
+#         input_variables=['user_answer', 'answer'], 
+#         template='You are given two inputs. {user_answer} is how someone would give answers in an interview. {answer} is the actual theoretical answer. Your job is to compare the two and tell the user how their answer could have been improved, what all it was missing, and what points to stress on.'
+#     )
+#     chain = prompt_template | model
+#     response = chain.invoke({'user_answer': user_answer, 'answer': answer})
+#     return response
+
+def compare(user_answer, answer):
+    if not user_answer or not answer:
+        return "Information not available"
+    model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.3)
+    prompt_template = PromptTemplate(
+        input_variables=['user_answer', 'answer'], 
+        template='You are given two inputs. {user_answer} is how someone would give answers in an interview. {answer} is the actual theoretical answer. Your job is to compare the two and tell the user how their answer could have been improved, what all it was missing, and what points to stress on.'
+    )
+    chain = prompt_template | model
+    response = chain.invoke({'user_answer': user_answer, 'answer': answer})
+    
+    # Convert response to string
+    response_str = str(response)
+
+    # Use regular expression to remove unwanted metadata and clean text
+    clean_text = re.sub(r"response_metadata=.*?\}", "", response_str)
+    clean_text = re.sub(r"id=.*?\}", "", clean_text)
+    clean_text = re.sub(r"usage_metadata=.*?\}", "", clean_text)
+    clean_text = clean_text.replace("\\n", "\n").replace("\\", "")
+
+    return clean_text.strip()
 
 def main():
     st.set_page_config(page_title="Chat PDF")
-    st.header("Prepare for your interviews with AI💁") 
+    st.header("Prepare for your interviews with AI💁")
     
     user_subject = st.text_input("What topic would you like to test today")
     
@@ -122,7 +157,9 @@ def main():
         
         if user_answer:
             answer = user_input(st.session_state.question)
-            st.write(answer)
+            comparison = compare(user_answer, answer)
+            # print(comparison)
+            st.write("Comparison: ", comparison)
 
 if __name__ == "__main__":
     main()
